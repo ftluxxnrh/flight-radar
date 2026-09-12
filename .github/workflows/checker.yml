@@ -1,0 +1,43 @@
+name: Flight Checker v2
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # 5분 주기 (런너 지연으로 ±수 분 흔들릴 수 있음)
+  workflow_dispatch:         # 수동 실행 버튼
+
+concurrency:
+  group: flight-checker
+  cancel-in-progress: false
+
+jobs:
+  check-flight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # v2는 의존성이 0개(순수 Node 내장 모듈)라 npm install / playwright 설치가 없다.
+      #
+      # ★ 필수: 이 레포지토리의 Settings → Secrets and variables → Actions 에
+      #   BOT_TOKEN  = 텔레그램 봇 token (봇파더에서 받은 값 그대로)
+      #   CHAT_IDS   = 8917221122 (콤마로 여러 명 추가 가능)
+      #   두 개의 시크릿을 등록해야 알림이 발송된다.
+      - name: Run Seat Checker
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_IDS: ${{ secrets.CHAT_IDS }}
+          # 웹 대시보드(Render 등)를 배포했다면 그 주소의 /api/config 를 넣으면
+          # 웹에서 저장한 조건(공항·날짜·시간대·주기·일시정지)이 자동 반영된다.
+          # 비워두면 아래 기본값으로 동작한다.
+          CONFIG_URL: ''
+          DEPARTURE: CJJ
+          ARRIVAL: CJU
+          TARGET_DATE: '20260916'
+          MAX_HOUR: '13'
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: node monitor.js

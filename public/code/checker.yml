@@ -1,0 +1,39 @@
+name: Flight Checker v2
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # 5분 주기 (런너 지연으로 ±수 분 흔들릴 수 있음)
+  workflow_dispatch:         # 수동 실행 버튼
+
+concurrency:
+  group: flight-checker
+  cancel-in-progress: false
+
+jobs:
+  check-flight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # v2는 의존성이 0개라 npm install / playwright 단계가 없다.
+      - name: Run Seat Checker
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_IDS: ${{ secrets.CHAT_IDS }}
+          # ★ 웹 대시보드 동기화: Render 배포 주소의 /api/config 를 넣으면
+          #   웹에서 바꾼 조건(공항·날짜·시간대·주기·일시정지)이 자동 반영된다.
+          #   비워두면 아래 기본값으로 동작한다.
+          CONFIG_URL: 'https://flight-radar.onrender.com/api/config'
+          # ↓ CONFIG_URL이 꺼져 있을 때의 기본값
+          DEPARTURE: CJJ
+          ARRIVAL: CJU
+          TARGET_DATE: '20260916'
+          MAX_HOUR: '13'
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: node monitor.js

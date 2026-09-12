@@ -1,0 +1,26 @@
+# Render Blueprint — 이 파일을 저장소에 포함하면
+# Render의 "New → Blueprint"에서 웹 서비스 + 데이터베이스가 한 번에 생성됩니다.
+services:
+  - type: web
+    name: flight-radar
+    runtime: node
+    plan: free
+    buildCommand: npm install && npx drizzle-kit push --force && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20.18.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flight-radar-db
+          property: connectionString
+      # 아래 두 값은 배포 시 Render가 입력 창을 띄워줍니다 (저장소에 커밋되지 않음)
+      - key: BOT_TOKEN
+        sync: false
+      - key: CHAT_IDS
+        sync: false
+
+databases:
+  - name: flight-radar-db
+    plan: free
